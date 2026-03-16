@@ -4,7 +4,9 @@
     {
       "src": "api/main.py",
       "use": "@vercel/python",
-      "config": { "maxLambdaSize": "15mb" }
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     },
     {
       "src": "frontend/index.html",
@@ -12,8 +14,17 @@
     }
   ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "api/main.py" },
-    { "src": "/",        "dest": "frontend/index.html" },
-    { "src": "/(.*)",    "dest": "frontend/index.html" }
+    {
+      "src": "/api/(.*)",
+      "dest": "api/main.py"
+    },
+    {
+      "src": "/",
+      "dest": "frontend/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "frontend/index.html"
+    }
   ]
 }
