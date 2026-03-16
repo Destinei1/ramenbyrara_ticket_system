@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍜 Ramen by RaRa — Live Reservations 🍜</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+:root {
+  --parch:      #ede5cc;
+  --parch2:     #e4d9b8;
+  --parch3:     #d9cba0;
+  --parch-dark: #c8b888;
+  --cream:      #faf6ea;
+  --red:        #c0341d;
+  --red2:       #8c1f0e;
+  --red-lt:     #e05540;
+  --gold:       #9a7228;
+  --gold-lt:    #c49a44;
+  --gold-pale:  #e8c870;
+  --ink:        #1a1008;
+  --ink-soft:   #3c2410;
+  --ink-mid:    #6b4828;
+  --ink-muted:  #9a7858;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background-color: var(--parch2);
+  background-image:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(26,16,8,0.04) 3px, rgba(26,16,8,0.04) 4px),
+    radial-gradient(ellipse at center, var(--cream) 0%, var(--parch2) 50%, var(--parch3) 100%);
+  color: var(--ink);
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  min-height: 100vh;
+  overflow-x: hidden;
+  image-rendering: pixelated;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 8px;
+  border: 4px solid var(--ink);
+  box-shadow: inset 4px 4px 0 var(--gold-lt), inset -4px -4px 0 var(--gold-lt), 8px 8px 0 rgba(26,16,8,0.15);
+  pointer-events: none; z-index: 300;
+}
+.app { max-width: 860px; margin: 0 auto; padding: 32px 24px 80px; position: relative; z-index: 2; }
+@keyframes blink { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+.title-card {
+  display: inline-block; background: var(--ink);
+  border: 4px solid var(--gold-lt);
+  box-shadow: 4px 4px 0 var(--red2), inset 2px 2px 0 rgba(255,255,255,0.1);
+  padding: 16px 28px 14px; margin-bottom: 18px; position: relative;
+}
+.title-card::before, .title-card::after { content: '★'; position: absolute; top: 50%; transform: translateY(-50%); color: var(--gold-lt); font-size: 10px; }
+.title-card::before { left: 8px; } .title-card::after { right: 8px; }
+.title-card h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(14px,3vw,22px); color: var(--gold-pale); letter-spacing: 2px; text-shadow: 3px 3px 0 var(--red2), -1px -1px 0 rgba(255,255,255,0.1); line-height: 1.4; }
+.header { text-align: center; padding: 40px 0 24px; position: relative; }
+.header-sub { font-size: 7px; color: var(--ink-mid); letter-spacing: 2px; margin-top: 10px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.blink { animation: blink 1s step-end infinite; }
+.pixel-coins { display: flex; justify-content: center; gap: 6px; margin: 10px 0; }
+.pixel-coin { width: 14px; height: 14px; background: var(--gold-lt); border: 2px solid var(--gold); box-shadow: 2px 2px 0 var(--ink); }
+.pixel-coin.red { background: var(--red); border-color: var(--red2); }
+.px-divider { display: flex; margin: 16px 0; overflow: hidden; }
+.px-div-block { height: 8px; flex: 1; }
+.px-div-block:nth-child(odd) { background: var(--red); }
+.px-div-block:nth-child(even) { background: var(--gold-lt); }
+.insert-coin { font-size: 7px; color: var(--gold); animation: blink 1s step-end infinite; letter-spacing: 2px; }
+
+/* API STATUS INDICATOR */
+.api-status {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--ink); border: 2px solid var(--gold-lt);
+  padding: 4px 10px; font-size: 6px; color: var(--gold-pale);
+  margin-top: 8px; letter-spacing: 1px;
+}
+.api-dot { width: 6px; height: 6px; border-radius: 0; }
+.api-dot.online  { background: #4ade80; }
+.api-dot.offline { background: var(--red); animation: blink .5s step-end infinite; }
+.api-dot.loading { background: var(--gold-lt); animation: blink .3s step-end infinite; }
+
+.status-bar { display: flex; justify-content: center; gap: 8px; margin: 16px auto; max-width: 540px; flex-wrap: wrap; }
+.status-stat { background: var(--ink); border: 3px solid var(--gold-lt); box-shadow: 3px 3px 0 var(--red2); padding: 10px 16px; text-align: center; min-width: 110px; }
+.status-num { font-size: 22px; line-height: 1; margin-bottom: 6px; display: block; }
+.status-stat.avail  .status-num { color: var(--parch); }
+.status-stat.locked .status-num { color: var(--gold-pale); animation: blink 1.2s step-end infinite; }
+.status-stat.taken  .status-num { color: var(--red-lt); }
+.status-label { font-size: 6px; letter-spacing: 1px; text-transform: uppercase; color: var(--parch3); }
+.legend { display: flex; justify-content: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 7px; color: var(--ink-mid); }
+.legend-px { width: 12px; height: 12px; border: 2px solid var(--ink); box-shadow: 2px 2px 0 rgba(26,16,8,0.3); }
+.legend-px.available { background: var(--cream); }
+.legend-px.locked    { background: var(--gold-lt); animation: blink 1s step-end infinite; }
+.legend-px.confirmed { background: var(--red); }
+.hp-bar-wrap { margin: 8px auto 14px; max-width: 400px; }
+.hp-label { font-size: 6px; color: var(--ink-mid); margin-bottom: 4px; letter-spacing: 2px; }
+.hp-bar { display: flex; gap: 3px; }
+.hp-segment { width: 32px; height: 12px; border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--red2); }
+.hp-segment.active { background: var(--red); }
+.hp-segment.empty  { background: var(--parch3); }
+
+.peninsula-wrapper { display: flex; justify-content: center; margin: 10px 0 28px; }
+.peninsula-scene { width: 540px; max-width: 100%; }
+.zone-label { text-align: center; font-size: 6px; letter-spacing: 3px; color: var(--ink-muted); text-transform: uppercase; margin-bottom: 6px; }
+.zone-label.guest { margin-top: 6px; }
+.seats-row { display: flex; justify-content: space-around; padding: 0 4px; }
+.stool { display: flex; flex-direction: column; align-items: center; cursor: pointer; padding: 2px; transition: transform .05s; }
+.stool.top { flex-direction: column-reverse; }
+.stool:hover { transform: translateY(-3px); }
+.stool:active { transform: translateY(1px); }
+.stool-seat { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-family: 'Press Start 2P', monospace; font-size: 11px; border: 3px solid; transition: all .1s; position: relative; border-radius: 0; }
+.stool-seat.available { background: var(--cream); border-color: var(--ink-soft); color: var(--ink); box-shadow: 3px 3px 0 var(--ink-soft); }
+.stool-seat.available:hover { background: var(--parch); border-color: var(--red); color: var(--red); box-shadow: 3px 3px 0 var(--red2); }
+.stool-seat.locked { background: var(--gold-pale); border-color: var(--gold); color: var(--ink); box-shadow: 3px 3px 0 var(--gold); animation: lockedPulse .8s step-end infinite; }
+@keyframes lockedPulse { 0%,100%{ background: var(--gold-pale); } 50%{ background: var(--gold-lt); } }
+.stool-seat.confirmed { background: var(--red); border-color: var(--red2); color: var(--cream); box-shadow: 3px 3px 0 var(--red2); }
+.steam-px { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); display: flex; gap: 2px; }
+.steam-dot { width: 4px; height: 4px; background: var(--red-lt); animation: steamRise 1s step-end infinite; }
+.steam-dot:nth-child(2){ animation-delay:.3s; } .steam-dot:nth-child(3){ animation-delay:.6s; }
+@keyframes steamRise { 0%{transform:translateY(0);opacity:1} 50%{transform:translateY(-6px);opacity:.6} 100%{transform:translateY(-10px);opacity:0} }
+.cancel-hint { position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%); font-size: 5px; color: var(--red); white-space: nowrap; opacity: 0; transition: opacity .1s; }
+.stool:hover .cancel-hint { opacity: 1; }
+.stool-leg { width: 6px; height: 18px; background: var(--ink-soft); box-shadow: 2px 0 0 var(--ink-mid); }
+.stool-lbl { font-size: 6px; color: var(--ink-muted); margin: 2px 0; letter-spacing: 1px; }
+.bar-counter { background: var(--ink); border: 3px solid var(--gold-lt); border-bottom: none; box-shadow: inset 0 2px 0 rgba(255,255,255,0.08), 0 4px 0 var(--ink-soft); padding: 12px 24px 10px; position: relative; }
+.bar-counter::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: repeating-linear-gradient(90deg, var(--gold-lt) 0px, var(--gold-lt) 8px, var(--red) 8px, var(--red) 16px); }
+.counter-decor { display: flex; justify-content: space-around; align-items: center; padding-top: 4px; }
+.counter-decor span { font-size: 16px; filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.5)); }
+.counter-line { height: 4px; margin: 8px 0 2px; background: repeating-linear-gradient(90deg, var(--red2) 0px, var(--red2) 4px, transparent 4px, transparent 8px); }
+.panel { background: var(--cream); border: 3px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); padding: 20px; margin-bottom: 16px; position: relative; }
+.panel::before { content: ''; position: absolute; top: -3px; left: -3px; width: 8px; height: 8px; background: var(--red); border: 3px solid var(--ink); }
+.panel::after  { content: ''; position: absolute; bottom: -3px; right: -3px; width: 8px; height: 8px; background: var(--gold-lt); border: 3px solid var(--ink); }
+.panel-title { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 3px solid var(--ink); display: flex; align-items: center; gap: 8px; }
+.panel-title.red  { color: var(--red); }
+.panel-title.gold { color: var(--gold); }
+.panel-title.navy { color: var(--ink-soft); }
+.panel-title-icon { font-size: 12px; }
+.seat-info-box { background: var(--parch2); border: 3px solid var(--ink-soft); box-shadow: inset 2px 2px 0 rgba(255,255,255,0.5); padding: 10px 12px; margin-bottom: 14px; min-height: 36px; display: flex; align-items: center; gap: 8px; font-size: 7px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 6px; letter-spacing: 2px; color: var(--ink-mid); text-transform: uppercase; }
+.form-group input, .form-group select { background: var(--parch); border: 3px solid var(--ink-soft); box-shadow: inset 2px 2px 0 rgba(255,255,255,0.4), 2px 2px 0 var(--ink-soft); padding: 9px 10px; color: var(--ink); font-family: 'Press Start 2P', monospace; font-size: 7px; outline: none; border-radius: 0; }
+.form-group input:focus, .form-group select:focus { border-color: var(--red); }
+.form-group select option { background: var(--parch); font-family: sans-serif; }
+.btn { width: 100%; padding: 12px 8px; border: none; border-radius: 0; font-family: 'Press Start 2P', monospace; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: transform .05s, box-shadow .05s; }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-primary { background: var(--red); color: var(--cream); border: 3px solid var(--red2); box-shadow: 4px 4px 0 var(--red2); }
+.btn-primary:hover:not(:disabled) { background: var(--red-lt); }
+.btn-primary:active:not(:disabled) { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--red2); }
+.btn-secondary { background: var(--parch); color: var(--gold); border: 3px solid var(--gold); box-shadow: 4px 4px 0 var(--gold); margin-top: 8px; }
+.btn-secondary:hover:not(:disabled) { background: var(--gold-pale); color: var(--ink); }
+.btn-secondary:active:not(:disabled) { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--gold); }
+.waitlist-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.waitlist-entry { display: flex; align-items: center; justify-content: space-between; background: var(--parch2); border: 2px solid var(--gold); box-shadow: 2px 2px 0 var(--gold); padding: 8px 10px; font-size: 7px; }
+.wl-pos { color: var(--gold); min-width: 28px; font-size: 9px; }
+.wl-name { color: var(--ink); flex: 1; padding: 0 10px; }
+.wl-contact { color: var(--ink-muted); font-size: 6px; }
+.events-log { margin-top: 10px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; scrollbar-width: thin; scrollbar-color: var(--ink) var(--parch2); }
+.ev { display: flex; align-items: flex-start; gap: 8px; font-size: 6px; padding: 5px 8px; border-left: 4px solid transparent; }
+.ev.lock     { border-color: var(--gold);     background: rgba(154,114,40,0.1); }
+.ev.confirm  { border-color: var(--red);      background: rgba(192,52,29,0.08); }
+.ev.release  { border-color: var(--ink-soft); background: rgba(60,36,16,0.06); }
+.ev.waitlist { border-color: var(--ink-mid);  background: rgba(107,72,40,0.06); }
+.ev.notify   { border-color: var(--red);      background: rgba(192,52,29,0.14); }
+.ev.error    { border-color: var(--red2);     background: rgba(140,31,14,0.15); }
+.ev-time  { color: var(--ink-muted); min-width: 54px; font-size: 5px; padding-top: 1px; white-space: nowrap; }
+.ev-type  { font-size: 6px; min-width: 90px; padding-top: 1px; white-space: nowrap; }
+.ev.lock .ev-type     { color: var(--gold); }
+.ev.confirm .ev-type  { color: var(--red); }
+.ev.release .ev-type  { color: var(--ink-soft); }
+.ev.waitlist .ev-type { color: var(--ink-mid); }
+.ev.notify .ev-type   { color: var(--red); }
+.ev.error .ev-type    { color: var(--red2); }
+.ev-msg { color: var(--ink-soft); line-height: 1.8; }
+.overlay { position: fixed; inset: 0; background: rgba(26,16,8,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .1s step-end; }
+.overlay.show { opacity: 1; pointer-events: all; }
+.cat-popup { background: var(--parch); border: 4px solid var(--ink); box-shadow: 8px 8px 0 var(--red2), inset 2px 2px 0 rgba(255,255,255,0.5); padding: 24px 22px 20px; max-width: 400px; width: 92%; text-align: center; transform: scale(0.5); transition: transform .15s step-end; position: relative; }
+.overlay.show .cat-popup { transform: scale(1); }
+.popup-corner { position: absolute; width: 12px; height: 12px; background: var(--red); border: 3px solid var(--red2); }
+.popup-corner.tl { top: -4px; left: -4px; } .popup-corner.tr { top: -4px; right: -4px; }
+.popup-corner.bl { bottom: -4px; left: -4px; } .popup-corner.br { bottom: -4px; right: -4px; }
+.pixel-cat { display: grid; grid-template-columns: repeat(14,8px); grid-template-rows: repeat(13,8px); gap: 0; margin: 0 auto 12px; width: 112px; height: 104px; image-rendering: pixelated; filter: drop-shadow(3px 3px 0 var(--ink-soft)); animation: catBounce .15s step-end 2; }
+@keyframes catBounce { 0%{transform:translateY(0)} 50%{transform:translateY(-8px)} 100%{transform:translateY(0)} }
+.pc { width: 8px; height: 8px; display: block; }
+.pc-k { background: var(--ink); } .pc-e { background: #f5f0e0; } .pc-p { background: #d4857a; }
+.pc-g { background: var(--gold-lt); } .pc-n { background: var(--gold-pale); }
+.pc-0 { background: transparent; } .pc-b { background: var(--parch3); }
+@keyframes noodlePx { 0%,100%{transform:translateY(0)} 50%{transform:translateY(4px)} }
+.pc-n { animation: noodlePx .8s step-end infinite; }
+.popup-alert { background: var(--red); color: var(--cream); border: 3px solid var(--red2); box-shadow: 3px 3px 0 var(--red2); padding: 8px 12px; font-size: 8px; letter-spacing: 1px; margin-bottom: 10px; display: inline-block; }
+.popup-name-px { font-size: 11px; color: var(--ink); margin-bottom: 4px; text-shadow: 2px 2px 0 var(--gold-lt); }
+.popup-meta-px { font-size: 6px; color: var(--ink-muted); margin-bottom: 14px; letter-spacing: 1px; }
+.notif-cards { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+.notif-card { background: var(--parch2); border: 2px solid var(--ink-soft); box-shadow: 2px 2px 0 var(--ink-soft); padding: 10px 12px; text-align: left; }
+.notif-card.email { border-color: var(--red); box-shadow: 2px 2px 0 var(--red2); }
+.notif-card-hdr { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.notif-icon { font-size: 12px; }
+.notif-channel { font-size: 6px; letter-spacing: 2px; text-transform: uppercase; }
+.notif-card.sms   .notif-channel { color: var(--ink-mid); }
+.notif-card.email .notif-channel { color: var(--red); }
+.notif-body { font-size: 6px; color: var(--ink-soft); line-height: 2; }
+.btn-close-px { background: var(--red); color: var(--cream); border: 3px solid var(--red2); box-shadow: 4px 4px 0 var(--red2); padding: 11px 20px; font-family: 'Press Start 2P', monospace; font-size: 8px; letter-spacing: 1px; cursor: pointer; text-transform: uppercase; transition: transform .05s, box-shadow .05s; }
+.btn-close-px:hover { background: var(--red-lt); }
+.btn-close-px:active { transform: translate(3px,3px); box-shadow: 1px 1px 0 var(--red2); }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: var(--gold-pale); border: 3px solid var(--gold-lt); box-shadow: 4px 4px 0 var(--gold); padding: 10px 18px; font-size: 7px; z-index: 50; transition: transform .1s step-end; white-space: nowrap; max-width: 90vw; text-align: center; }
+.toast.show { transform: translateX(-50%) translateY(0); }
+.footer-strip { margin-top: 28px; padding-top: 12px; border-top: 4px solid var(--ink); display: flex; align-items: center; justify-content: space-between; font-size: 6px; color: var(--ink-muted); }
+.px-hearts { display: flex; gap: 3px; }
+.px-heart { font-size: 10px; }
+@media(max-width:540px){ .peninsula-scene{width:100%} .stool-seat{width:44px;height:44px;font-size:9px} .form-row{grid-template-columns:1fr} .status-bar{gap:6px} .status-stat{min-width:80px} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="header">
+    <div class="title-card"><h1>RAMEN BY RARA</h1></div>
+    <div class="pixel-coins">
+      <div class="pixel-coin red"></div><div class="pixel-coin"></div>
+      <div class="pixel-coin red"></div><div class="pixel-coin"></div>
+      <div class="pixel-coin red"></div>
+    </div>
+    <div class="header-sub">
+      <span>🍜</span>
+      <span>Project by Destinei AKA Neon</span>
+      <span class="blink">▮</span>
+      <span>8 SEATS ONLY</span>
+      <span>🍜</span>
+    </div>
+    <div class="insert-coin" style="margin-top:8px">— BOOK YOUR SEAT TODAY —</div>
+    <div style="margin-top:8px">
+      <div class="api-status">
+        <div class="api-dot loading" id="api-dot"></div>
+        <span id="api-status-text">CONNECTING TO SERVER...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="px-divider">
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-stat avail"><span class="status-num" id="cnt-avail">-</span><div class="status-label">AVAILABLE</div></div>
+    <div class="status-stat locked"><span class="status-num" id="cnt-locked">-</span><div class="status-label">LOCKED</div></div>
+    <div class="status-stat taken"><span class="status-num" id="cnt-taken">-</span><div class="status-label">CONFIRMED</div></div>
+  </div>
+
+  <div class="hp-bar-wrap">
+    <div class="hp-label">AVAILABLE SEATING ▸▸▸▸▸▸▸▸</div>
+    <div class="hp-bar" id="hp-bar"></div>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-px available"></div>OPEN</div>
+    <div class="legend-item"><div class="legend-px locked"></div>LOCKED</div>
+    <div class="legend-item"><div class="legend-px confirmed"></div>TAKEN</div>
+  </div>
+
+  <div class="peninsula-wrapper">
+    <div class="peninsula-scene">
+      <div class="zone-label">▲ NORTH SIDE ▲</div>
+      <div class="seats-row" id="row-top"></div>
+      <div class="bar-counter">
+        <div class="counter-decor">
+          <span>🍜</span><span>🥢</span><span>🫙</span>
+          <span>🥚</span><span>🧅</span><span>🥢</span><span>🍜</span>
+        </div>
+        <div class="counter-line"></div>
+      </div>
+      <div class="seats-row" id="row-bot"></div>
+      <div class="zone-label guest">▼ ENTRANCE SIDE ▼</div>
+    </div>
+  </div>
+
+  <div class="px-divider">
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+    <div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div><div class="px-div-block"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title red"><span class="panel-title-icon">🍜</span> COMPLETE YOUR RESERVATION</div>
+    <div class="seat-info-box" id="seat-info-box">
+      <span id="seat-info-icon">▷</span>
+      <span id="seat-info-text" style="color:var(--ink-muted)">SELECT A SEAT ABOVE TO BEGIN</span>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>FULL NAME</label><input type="text" id="f-name" placeholder="ENTER NAME" /></div>
+      <div class="form-group"><label>DATE</label><input type="date" id="f-date" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>EMAIL</label><input type="email" id="f-email" placeholder="YOU@EMAIL.COM" /></div>
+      <div class="form-group"><label>PHONE / SMS</label><input type="tel" id="f-phone" placeholder="+1 555 000 0000" /></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>PARTY SIZE (MAX 3)</label>
+        <select id="f-party">
+          <option value="1">1 GUEST</option>
+          <option value="2">2 GUESTS</option>
+          <option value="3">3 GUESTS</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="btn-reserve" onclick="doReserve()">▶ CONFIRM RESERVATION</button>
+    <button class="btn btn-secondary" id="btn-waitlist" onclick="doWaitlist()">+ JOIN WAITLIST</button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title gold"><span class="panel-title-icon">⏳</span> WAITLIST QUEUE</div>
+    <div class="waitlist-list" id="wl-list">
+      <div style="font-size:7px;color:var(--ink-muted);text-align:center;padding:10px 0;letter-spacing:1px">NO PLAYERS IN QUEUE...</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title navy"><span class="panel-title-icon">📡</span> SYSTEM LOG</div>
+    <div class="events-log" id="ev-log">
+      <div class="ev release">
+        <span class="ev-time">BOOT</span>
+        <span class="ev-type">SYS_INIT</span>
+        <span class="ev-msg">SYSTEM STARTING · CONNECTING TO REDIS + SUPABASE...</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer-strip">
+    <div>DESTINEI SIMPSON</div>
+    <div>DESTSIMP@GMAIL.COM</div>
+    <div class="insert-coin">THANKS FOR VISITING</div>
+    <div class="px-hearts"><span class="px-heart">❤️</span><span class="px-heart">❤️</span><span class="px-heart">❤️</span></div>
+  </div>
+
+</div>
+
+<!-- CAT POPUP -->
+<div class="overlay" id="overlay">
+  <div class="cat-popup">
+    <div class="popup-corner tl"></div><div class="popup-corner tr"></div>
+    <div class="popup-corner bl"></div><div class="popup-corner br"></div>
+    <div class="pixel-cat" id="pixel-cat"></div>
+    <div class="popup-alert">!! SEAT ALERT !!</div>
+    <div class="popup-name-px" id="pop-name">—</div>
+    <div class="popup-meta-px" id="pop-meta">—</div>
+    <div class="notif-cards">
+      <div class="notif-card sms">
+        <div class="notif-card-hdr"><span class="notif-icon">💬</span><span class="notif-channel">SMS · TWILIO</span></div>
+        <div class="notif-body" id="pop-sms">—</div>
+      </div>
+      <div class="notif-card email">
+        <div class="notif-card-hdr"><span class="notif-icon">✉️</span><span class="notif-channel">EMAIL · SENDGRID</span></div>
+        <div class="notif-body" id="pop-email">—</div>
+      </div>
+    </div>
+    <button class="btn-close-px" onclick="closePopup()">▶ SLURP IT UP 🍜</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  CONFIG — swap this URL after Vercel deploy
+// ══════════════════════════════════════════════════════════
+const API = window.location.hostname === 'localhost'
+  ? 'http://localhost:8000'
+  : '';  // on Vercel, API routes are at /api/*
+
+// ── PIXEL CAT ─────────────────────────────────────────────
+const CAT_PIXELS = [
+  '0','0','k','k','0','0','0','0','0','k','k','0','0','0',
+  '0','k','p','k','k','0','0','0','k','p','k','k','0','0',
+  '0','k','k','k','k','k','k','k','k','k','k','0','g','0',
+  'k','k','k','k','k','k','k','k','k','k','k','k','g','0',
+  'k','k','e','e','k','k','k','k','e','e','k','k','g','n',
+  'k','k','e','e','k','k','k','k','e','e','k','k','0','n',
+  'k','k','k','k','k','p','k','k','k','k','k','k','0','n',
+  'k','0','0','k','b','k','k','k','b','k','0','0','k','0',
+  '0','k','k','k','k','k','k','k','k','k','k','k','0','0',
+  '0','k','k','k','k','k','k','k','k','k','k','k','0','0',
+  '0','0','k','k','k','k','k','k','k','k','k','0','0','0',
+  '0','0','k','k','k','k','k','k','k','k','0','0','0','0',
+  '0','0','0','k','k','k','k','k','k','0','0','0','k','0',
+];
+function buildPixelCat() {
+  const g = document.getElementById('pixel-cat'); g.innerHTML = '';
+  CAT_PIXELS.forEach(c => { const p = document.createElement('div'); p.className=`pc pc-${c}`; g.appendChild(p); });
+}
+buildPixelCat();
+
+// ── STATE ─────────────────────────────────────────────────
+const SEATS = 8;
+const state = {};
+for (let i = 1; i <= SEATS; i++) state[i] = { status:'available', reservationId: null };
+
+let activeSeat = null;
+let sessionId  = localStorage.getItem('ramen_session') || crypto.randomUUID();
+localStorage.setItem('ramen_session', sessionId);
+
+let lockTimers    = {};
+let selectedDate  = '';
+let apiOnline     = false;
+
+// ── API HELPERS ───────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const url = API + path;
+  const res = await fetch(url, {
+    headers: { 'Content-Type': 'application/json' },
+    ...opts
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || 'API Error');
+  return data;
+}
+
+// ── API STATUS CHECK ──────────────────────────────────────
+async function checkApiStatus() {
+  try {
+    await apiFetch('/health');
+    document.getElementById('api-dot').className = 'api-dot online';
+    document.getElementById('api-status-text').textContent = 'SERVER ONLINE · REDIS + SUPABASE CONNECTED';
+    apiOnline = true;
+    logEv('confirm','API_ONLINE','FASTAPI CONNECTED · UPSTASH REDIS READY · SUPABASE POSTGRES READY');
+  } catch {
+    document.getElementById('api-dot').className = 'api-dot offline';
+    document.getElementById('api-status-text').textContent = 'SERVER OFFLINE · RUNNING IN DEMO MODE';
+    apiOnline = false;
+    logEv('error','API_OFFLINE','CANNOT REACH SERVER · RUNNING LOCAL DEMO · DEPLOY TO VERCEL TO GO LIVE');
+  }
+}
+
+// ── LOAD SEATS FROM API ───────────────────────────────────
+async function loadSeats(diningDate) {
+  if (!apiOnline || !diningDate) return;
+  try {
+    const data = await apiFetch(`/seats/${diningDate}`);
+    data.seats.forEach(s => {
+      state[s.seat_id].status = s.status;
+      state[s.seat_id].reservationId = s.reservation?.reservation_id || null;
+      refreshStool(s.seat_id);
+    });
+    updateCounts(); updateHPBar();
+    logEv('release','SEATS_LOADED',`FETCHED LIVE SEAT STATUS FROM SUPABASE · DATE: ${diningDate}`);
+  } catch(e) {
+    logEv('error','LOAD_ERROR',`FAILED TO LOAD SEATS: ${e.message}`);
+  }
+}
+
+// ── LOAD WAITLIST FROM API ────────────────────────────────
+async function loadWaitlist(diningDate) {
+  if (!apiOnline || !diningDate) return;
+  try {
+    const data = await apiFetch(`/waitlist/${diningDate}`);
+    renderWaitlistData(data.waitlist);
+  } catch {}
+}
+
+// ── HP BAR ────────────────────────────────────────────────
+function updateHPBar() {
+  const bar = document.getElementById('hp-bar'); bar.innerHTML = '';
+  let confirmed = 0;
+  for (let i = 1; i <= SEATS; i++) if (state[i].status === 'confirmed') confirmed++;
+  for (let i = 0; i < SEATS; i++) {
+    const seg = document.createElement('div');
+    seg.className = `hp-segment ${i < (SEATS - confirmed) ? 'active' : 'empty'}`;
+    bar.appendChild(seg);
+  }
+}
+updateHPBar();
+
+// ── BUILD MAP ─────────────────────────────────────────────
+function buildMap() {
+  const top = document.getElementById('row-top');
+  const bot = document.getElementById('row-bot');
+  top.innerHTML = ''; bot.innerHTML = '';
+  for (let i = 1; i <= 4; i++) top.appendChild(makeStool(i,'top'));
+  for (let i = 5; i <= 8; i++) bot.appendChild(makeStool(i,'bot'));
+}
+
+function makeStool(n, side) {
+  const wrap = document.createElement('div');
+  wrap.className = `stool${side==='top'?' top':''}`;
+  wrap.id = `stool-${n}`; wrap.onclick = () => clickSeat(n);
+  const leg  = document.createElement('div'); leg.className = 'stool-leg';
+  const seat = document.createElement('div'); seat.className = `stool-seat ${state[n].status}`; seat.id = `seat-${n}`;
+  setSeatContent(seat, n);
+  const lbl  = document.createElement('div'); lbl.className = 'stool-lbl'; lbl.textContent = `S${n}`;
+  wrap.appendChild(leg); wrap.appendChild(seat); wrap.appendChild(lbl);
+  return wrap;
+}
+
+function setSeatContent(el, n) {
+  el.textContent = '';
+  const s = state[n];
+  if (s.status === 'confirmed') {
+    el.textContent = '✓';
+    const steam = document.createElement('div'); steam.className = 'steam-px';
+    for (let i = 0; i < 3; i++) { const d = document.createElement('div'); d.className = 'steam-dot'; steam.appendChild(d); }
+    el.appendChild(steam);
+    const hint = document.createElement('div'); hint.className = 'cancel-hint'; hint.textContent = 'CANCEL'; el.appendChild(hint);
+  } else if (s.status === 'locked') {
+    el.textContent = '🔒';
+  } else {
+    el.textContent = n;
+  }
+}
+
+function refreshStool(n) {
+  const el = document.getElementById(`seat-${n}`);
+  el.className = `stool-seat ${state[n].status}`;
+  setSeatContent(el, n);
+}
+
+// ── CLICK SEAT ────────────────────────────────────────────
+async function clickSeat(n) {
+  const s = state[n];
+
+  if (s.status === 'confirmed') {
+    if (s.reservationId) { doCancel(n, s.reservationId); }
+    else { toast('SEAT CONFIRMED BY ANOTHER GUEST'); }
+    return;
+  }
+
+  if (s.status === 'locked') {
+    toast(`SEAT ${n} IS LOCKED BY ANOTHER PLAYER`); return;
+  }
+
+  // Release previous local lock
+  if (activeSeat && activeSeat !== n) {
+    if (lockTimers[activeSeat]) clearTimeout(lockTimers[activeSeat]);
+    state[activeSeat].status = 'available'; state[activeSeat].lockedBy = null;
+    refreshStool(activeSeat);
+    logEv('release','LOCK_RELEASE',`SEAT ${activeSeat} UNLOCKED · NEW SEAT SELECTED`);
+  }
+
+  // Get current date from form
+  const diningDate = document.getElementById('f-date').value;
+  if (!diningDate) { toast('SELECT A DATE FIRST'); return; }
+
+  // Call Redis lock API
+  if (apiOnline) {
+    try {
+      document.getElementById(`seat-${n}`).style.opacity = '0.5';
+      const result = await apiFetch('/lock', {
+        method: 'POST',
+        body: JSON.stringify({ seat_id: n, dining_date: diningDate, session_id: sessionId })
+      });
+      document.getElementById(`seat-${n}`).style.opacity = '1';
+      logEv('lock','REDIS_LOCK', `${result.message} · TTL: ${result.ttl}s`);
+    } catch(e) {
+      document.getElementById(`seat-${n}`).style.opacity = '1';
+      toast(e.message);
+      logEv('error','LOCK_FAILED',`SEAT ${n}: ${e.message}`);
+      return;
+    }
+  }
+
+  state[n].status = 'locked'; state[n].lockedBy = 'me';
+  activeSeat = n; selectedDate = diningDate;
+  refreshStool(n); updateCounts(); updateHPBar();
+
+  document.getElementById('seat-info-icon').textContent = '🔒';
+  document.getElementById('seat-info-text').style.color = 'var(--red)';
+  document.getElementById('seat-info-text').textContent = `SEAT ${n} LOCKED · 10 MIN TO CONFIRM`;
+  logEv('lock','SEAT_LOCKED',`SET seat:ra:${n}:${diningDate} ${sessionId.slice(0,8)}... NX EX 600 → OK`);
+
+  if (lockTimers[n]) clearTimeout(lockTimers[n]);
+  lockTimers[n] = setTimeout(() => {
+    if (state[n].status === 'locked' && state[n].lockedBy === 'me') {
+      state[n].status = 'available'; state[n].lockedBy = null;
+      refreshStool(n); updateCounts(); updateHPBar();
+      logEv('release','LOCK_EXPIRED',`SEAT ${n} TTL EXPIRED · KEY DELETED · SEAT RELEASED`);
+      if (activeSeat === n) {
+        activeSeat = null;
+        document.getElementById('seat-info-icon').textContent = '▷';
+        document.getElementById('seat-info-text').style.color = 'var(--ink-muted)';
+        document.getElementById('seat-info-text').textContent = 'LOCK EXPIRED · SELECT ANOTHER SEAT';
+      }
+      toast(`SEAT ${n} LOCK EXPIRED`);
+    }
+  }, 600000); // 10 min matches Redis TTL
+}
+
+// ── RESERVE ───────────────────────────────────────────────
+async function doReserve() {
+  const name       = document.getElementById('f-name').value.trim();
+  const diningDate = document.getElementById('f-date').value;
+  const email      = document.getElementById('f-email').value.trim();
+  const phone      = document.getElementById('f-phone').value.trim();
+  const partySize  = parseInt(document.getElementById('f-party').value);
+
+  if (!activeSeat)           return toast('SELECT A SEAT FIRST');
+  if (!name)                 return toast('ENTER YOUR NAME');
+  if (!diningDate)           return toast('SELECT A DATE');
+  if (!email && !phone)      return toast('ADD EMAIL OR PHONE FOR ALERTS');
+  if (state[activeSeat].status !== 'locked' || state[activeSeat].lockedBy !== 'me')
+                             return toast('LOCK EXPIRED · RE-SELECT SEAT');
+
+  const btn = document.getElementById('btn-reserve');
+  btn.disabled = true; btn.textContent = '⏳ CONFIRMING...';
+
+  try {
+    if (apiOnline) {
+      const result = await apiFetch('/reserve', {
+        method: 'POST',
+        body: JSON.stringify({
+          seat_id:     activeSeat,
+          dining_date: diningDate,
+          session_id:  sessionId,
+          full_name:   name,
+          email:       email || null,
+          phone:       phone || null,
+          party_size:  partySize,
+        })
+      });
+      state[activeSeat].status        = 'confirmed';
+      state[activeSeat].reservationId = result.reservation_id;
+      state[activeSeat].lockedBy      = null;
+      if (lockTimers[activeSeat]) clearTimeout(lockTimers[activeSeat]);
+      const sn = activeSeat; activeSeat = null;
+      refreshStool(sn); updateCounts(); updateHPBar();
+      logEv('confirm','CONFIRMED',`SEAT ${sn} · ${name} · ${diningDate} · WRITTEN TO SUPABASE ✓`);
+      logEv('confirm','REDIS_RELEASE',`REDIS KEY DELETED · SUPABASE IS NOW SOURCE OF TRUTH`);
+      toast(`🍜 CONFIRMED! SEE YOU SOON, ${name.toUpperCase()}!`);
+      document.getElementById('seat-info-icon').textContent = '▷';
+      document.getElementById('seat-info-text').style.color = 'var(--ink-muted)';
+      document.getElementById('seat-info-text').textContent = 'SELECT A SEAT ABOVE TO BEGIN';
+    } else {
+      // Demo mode fallback
+      state[activeSeat].status = 'confirmed'; state[activeSeat].lockedBy = null;
+      if (lockTimers[activeSeat]) clearTimeout(lockTimers[activeSeat]);
+      const sn = activeSeat; activeSeat = null;
+      refreshStool(sn); updateCounts(); updateHPBar();
+      logEv('confirm','DEMO_CONFIRM',`DEMO MODE · SEAT ${sn} · ${name} (NO DB WRITE)`);
+      toast(`🍜 DEMO: CONFIRMED SEAT FOR ${name.toUpperCase()}!`);
+    }
+  } catch(e) {
+    logEv('error','RESERVE_ERROR', e.message);
+    toast(e.message.slice(0, 60));
+  } finally {
+    btn.disabled = false; btn.textContent = '▶ CONFIRM RESERVATION';
+  }
+}
+
+// ── WAITLIST ──────────────────────────────────────────────
+async function doWaitlist() {
+  const name       = document.getElementById('f-name').value.trim();
+  const diningDate = document.getElementById('f-date').value;
+  const email      = document.getElementById('f-email').value.trim();
+  const phone      = document.getElementById('f-phone').value.trim();
+  const partySize  = parseInt(document.getElementById('f-party').value);
+
+  if (!name)            return toast('ENTER YOUR NAME FIRST');
+  if (!diningDate)      return toast('SELECT A DATE');
+  if (!email && !phone) return toast('ADD EMAIL OR PHONE');
+
+  const btn = document.getElementById('btn-waitlist');
+  btn.disabled = true; btn.textContent = '⏳ JOINING...';
+
+  try {
+    if (apiOnline) {
+      const result = await apiFetch('/waitlist', {
+        method: 'POST',
+        body: JSON.stringify({
+          dining_date: diningDate,
+          full_name:   name,
+          email:       email || null,
+          phone:       phone || null,
+          party_size:  partySize,
+        })
+      });
+      logEv('waitlist','WAITLIST_JOINED',`${name.toUpperCase()} · POS #${result.position} · SAVED TO SUPABASE`);
+      toast(`${name.toUpperCase()} · WAITLIST POSITION #${result.position}`);
+      await loadWaitlist(diningDate);
+    } else {
+      logEv('waitlist','DEMO_WAITLIST',`DEMO MODE · ${name.toUpperCase()} ADDED LOCALLY`);
+      toast(`DEMO: ${name.toUpperCase()} ADDED TO WAITLIST`);
+    }
+  } catch(e) {
+    logEv('error','WAITLIST_ERROR', e.message);
+    toast(e.message.slice(0, 60));
+  } finally {
+    btn.disabled = false; btn.textContent = '+ JOIN WAITLIST';
+  }
+}
+
+// ── CANCEL ────────────────────────────────────────────────
+async function doCancel(n, reservationId) {
+  if (!confirm('CANCEL THIS RESERVATION?')) return;
+  try {
+    if (apiOnline && reservationId) {
+      const result = await apiFetch(`/cancel/${reservationId}`, { method: 'POST' });
+      state[n].status = 'available'; state[n].reservationId = null;
+      refreshStool(n); updateCounts(); updateHPBar();
+      logEv('release','CANCELLED',`SEAT ${n} CANCELLED · WRITTEN TO SUPABASE`);
+      if (result.next_on_waitlist) {
+        showCatPopup(result.next_on_waitlist, n, selectedDate);
+        logEv('notify','WAITLIST_NOTIFIED',`${result.next_on_waitlist.name.toUpperCase()} NOTIFIED · SEAT ${n} OPEN`);
+      }
+      toast(`SEAT ${n} CANCELLED`);
+    } else {
+      state[n].status = 'available'; state[n].reservationId = null;
+      refreshStool(n); updateCounts(); updateHPBar();
+      toast(`DEMO: SEAT ${n} CANCELLED`);
+    }
+  } catch(e) {
+    toast(e.message);
+  }
+}
+
+// ── CAT POPUP ─────────────────────────────────────────────
+function showCatPopup(person, seatNum, date) {
+  const name = person.name?.toUpperCase() || 'GUEST';
+  document.getElementById('pop-name').textContent = name;
+  document.getElementById('pop-meta').textContent = `SEAT ${seatNum} OPEN · LAST-MIN CANCEL${date?' · '+date:''}`;
+  document.getElementById('pop-sms').textContent   = `HI ${name}! SEAT ${seatNum} AT RAMEN BY RARA IS OPEN. YOU'RE OFF THE WAITLIST! THE BROTH IS HOT! 🍜 REPLY YES IN 30 MIN.`;
+  document.getElementById('pop-email').textContent = `DEAR ${name}, SEAT ${seatNum} JUST OPENED. YOU'RE OFF THE WAITLIST! THE BROTH IS HOT! 🍜 CLAIM IN 30 MIN OR IT RETURNS TO POOL.`;
+  buildPixelCat();
+  document.getElementById('overlay').classList.add('show');
+}
+function closePopup() { document.getElementById('overlay').classList.remove('show'); }
+
+// ── RENDER WAITLIST ───────────────────────────────────────
+function renderWaitlistData(entries) {
+  const el = document.getElementById('wl-list');
+  if (!entries || !entries.length) {
+    el.innerHTML = '<div style="font-size:7px;color:var(--ink-muted);text-align:center;padding:10px 0;letter-spacing:1px">NO PLAYERS IN QUEUE...</div>';
+    return;
+  }
+  el.innerHTML = '';
+  entries.forEach(w => {
+    const d = document.createElement('div'); d.className = 'waitlist-entry';
+    d.innerHTML = `<span class="wl-pos">#${w.position}</span><span class="wl-name">${w.name.toUpperCase()}</span><span class="wl-contact">PARTY OF ${w.party_size}</span>`;
+    el.appendChild(d);
+  });
+}
+
+// ── LOG ───────────────────────────────────────────────────
+function logEv(type, evType, msg) {
+  const log = document.getElementById('ev-log');
+  const d   = document.createElement('div'); d.className = `ev ${type}`;
+  const t   = new Date().toLocaleTimeString('en-US',{hour12:false});
+  d.innerHTML = `<span class="ev-time">${t}</span><span class="ev-type">${evType}</span><span class="ev-msg">${msg}</span>`;
+  log.prepend(d);
+}
+
+// ── COUNTS ────────────────────────────────────────────────
+function updateCounts() {
+  let a=0,l=0,c=0;
+  for (let i=1;i<=SEATS;i++) {
+    if (state[i].status==='available') a++;
+    else if (state[i].status==='locked') l++;
+    else c++;
+  }
+  document.getElementById('cnt-avail').textContent = a;
+  document.getElementById('cnt-locked').textContent = l;
+  document.getElementById('cnt-taken').textContent = c;
+}
+
+// ── TOAST ─────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ── DATE CHANGE ───────────────────────────────────────────
+document.getElementById('f-date').addEventListener('change', async (e) => {
+  selectedDate = e.target.value;
+  // Reset local state
+  for (let i=1;i<=SEATS;i++) { state[i].status='available'; state[i].reservationId=null; }
+  buildMap(); updateCounts(); updateHPBar();
+  // Load live data for new date
+  await loadSeats(selectedDate);
+  await loadWaitlist(selectedDate);
+});
+
+// ── INIT ──────────────────────────────────────────────────
+buildMap(); updateCounts(); updateHPBar();
+const tomorrow = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+document.getElementById('f-date').value = tomorrow.toISOString().split('T')[0];
+selectedDate = document.getElementById('f-date').value;
+document.getElementById('overlay').addEventListener('click', e => { if(e.target.id==='overlay') closePopup(); });
+
+// Boot sequence
+checkApiStatus().then(() => {
+  loadSeats(selectedDate);
+  loadWaitlist(selectedDate);
+});
+
+// Poll for live updates every 30 seconds (other users booking)
+setInterval(() => {
+  if (apiOnline && selectedDate) {
+    loadSeats(selectedDate);
+    loadWaitlist(selectedDate);
+  }
+}, 30000);
+</script>
+</body>
+</html>
