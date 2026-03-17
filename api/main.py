@@ -41,12 +41,11 @@ app = FastAPI(title="Ramen by RaRa API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     # ================================================================
-    #  AFTER VERCEL DEPLOY: replace "*" with your actual Vercel URL
-    #  Example: allow_origins=["https://ramen-by-rara.vercel.app"]
+    #  actual Vercel URL
     # ================================================================
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["https://ramenbyrara-ticket-system.vercel.app/"],
+    allow_methods=["https://ramenbyrara-ticket-system.vercel.app/"],
+    allow_headers=["https://ramenbyrara-ticket-system.vercel.app/"],
 )
 
 # ── CONSTANTS ───────────────────────────────────────────────
