@@ -364,11 +364,11 @@ body::before {
 
 <script>
 // ══════════════════════════════════════════════════════════
-//  CONFIG — swap this URL after Vercel deploy
+//  CONFIG — vercel deployment URL
 // ══════════════════════════════════════════════════════════
 const API = window.location.hostname === 'localhost'
   ? 'http://localhost:8000'
-  : '';  // on Vercel, API routes are at /api/*
+  : 'https://ramenbyrara-ticket-system.vercel.app';
 
 // ── PIXEL CAT ─────────────────────────────────────────────
 const CAT_PIXELS = [
