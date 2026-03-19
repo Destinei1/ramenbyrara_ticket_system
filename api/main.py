@@ -14,6 +14,7 @@ from datetime import datetime
 from upstash_redis import Redis
 from supabase import create_client, Client
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")  # Load .env file for local development
 
@@ -44,8 +45,8 @@ app.add_middleware(
     #  actual Vercel URL
     # ================================================================
     allow_origins=["https://ramenbyrara-ticket-system.vercel.app/"],
-    allow_methods=["https://ramenbyrara-ticket-system.vercel.app/"],
-    allow_headers=["https://ramenbyrara-ticket-system.vercel.app/"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 # ── CONSTANTS ───────────────────────────────────────────────
