@@ -15,7 +15,7 @@ from upstash_redis import Redis
 from supabase import create_client, Client
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")  # Load .env file for local development
 
 # ================================================================
 #  CLIENTS — reads from .env file locally,
