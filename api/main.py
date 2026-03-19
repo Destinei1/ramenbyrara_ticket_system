@@ -44,7 +44,7 @@ app.add_middleware(
     # ================================================================
     #  actual Vercel URL
     # ================================================================
-    allow_origins=["https://ramenbyrara-ticket-system.vercel.app/"],
+    allow_origins=["https://ramenbyrara-ticket-system.vercel.app"],
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
