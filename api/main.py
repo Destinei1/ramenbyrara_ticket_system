@@ -27,13 +27,13 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")  # Load .env file
 #    UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN
 # ================================================================
 redis = Redis(
-    url=os.environ["UPSTASH_REDIS_REST_URL"],        # → from .env
-    token=os.environ["UPSTASH_REDIS_REST_TOKEN"]     # → from .env
+    url=os.environ.get("UPSTASH_REDIS_REST_URL"),        # → from .env
+    token=os.environ.get("UPSTASH_REDIS_REST_TOKEN")     # → from .env
 )
 
 supabase: Client = create_client(
-    os.environ["SUPABASE_URL"],                      # → from .env
-    os.environ["SUPABASE_SERVICE_KEY"]               # → from .env
+    os.environ.get("SUPABASE_URL"),                      # → from .env
+    os.environ.get("SUPABASE_SERVICE_KEY")               # → from .env
 )
 
 # ── APP ─────────────────────────────────────────────────────
