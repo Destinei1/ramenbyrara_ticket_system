@@ -37,7 +37,7 @@ supabase: Client = create_client(
 )
 
 # ── APP ─────────────────────────────────────────────────────
-app = FastAPI(title="Ramen by RaRa API", version="1.0.0")
+app = FastAPI(title="Ramen by RaRa API", version="1.0.0", root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,
